@@ -119,7 +119,7 @@ k11N = k11 ./ ((Nnuc).*z0_f);                                               % pe
 %k22 = 2;                                                                   % twist modulus per nucleosome(pN*nm);
 k22N = k22 ./ ((Nnuc).*z0_f);                                               % per whole fiber
 %k12 = 0.1;                                                                 % twist-stretch coupling factor (pN/rad);
-k12N = -k12 ./ ((Nnuc).*z0_f);                                              % per whole fiber
+k12N = k12 ./ ((Nnuc).*z0_f);                                              % per whole fiber
 %Lkf0 = -0.15;                                                              % linking number of a fiber, per nucleosome;
 
 
@@ -155,7 +155,7 @@ Lk_f = dLk - Lk_DNA;
 z_handle =  L0 .* (1 - 0.5 .* sqrt(kbT/(At .* F))) - (C.^2 ./ 16) .* (2 .* pi .* Lk_DNA ./ L0).^2 .* ( kbT ./ (At*F)) .^ (3/2);   % extension of twisted DNA (size of the fiber is neglected here)
 
 % change in extension of a fiber  due to twist-stretch coupling (includes all nucleosomes)
-dZ_f = (F - k12N .* 2 .* pi .* abs(Lk_f)) ./ k11N;                          
+dZ_f = (F - k12N .* 2 .* pi .* Lk_f) ./ k11N;                          
 
 % fiber dimension
 Z_f = Nnuc .* z0_f + dZ_f;                                                 
@@ -263,10 +263,10 @@ end
 if F > 3;                                                                   % apply Boltzman only when unwrapping occurs (above 3 pN at positive twist)
     
     % additional twist that arises from one unfolded nucleosome
-    gain = 0.3;
+    gain = 0.5;
     
     % unstacking energy per nucleosome
-    Gu = 4.1 .* 25;                                                         
+    Gu = 4.1 .* 17;                                                         
    
     % varying the number of folded nucleosomes
     for i = 1 : (Nnuc - Ntet +1)   
@@ -282,24 +282,26 @@ if F > 3;                                                                   % ap
         % twist modulus (pN*nm) (k22 is per nucleosome);
         k22N(i) = k22 ./ N(i) .* z0_f;                                          % per fiber
         % twist-stretch coupling factor (pN/rad);
-        k12N(i) = -k12 ./ N(i) .* z0_f;                                         % per fiber
+        k12N(i) = k12 ./ N(i) .* z0_f;                                          % per fiber
       
         % DISTRIBUTION OF TWIST BETWEEN DNA AND FIBER
-        dLk_DNA(i,:) = ((i-1).* gain + dLk) ./ ((Ct .* kbT)./(k22N(1) .* Z_DNA(i))+1); 
         
+        dLk_DNA(i,:) = ((i-1).* gain + dLk) ./ ((Ct .* kbT)./(k22N(1) .* Z_DNA(i))+1); 
+       
         dLk_f(i,:) = (Nnuc-Ntet).* Lkf0  + (dLk - dLk_DNA(i,:));                % HERE IT IS IMPORTANT TO OFFSET LK_F DUE TO FIBER'S CHIRALITY 
-    
+   
+        
         % free energy DNA with added F*z_DNA (because work will be substracted at the end in the Boltzmann formula)
         G_DNAtether(i,:) = F .* (Z_DNA(i,:)) -  Z_DNA(i,:) .* F .* (1-sqrt(kbT./(F.*At))+F./(2.*S)) + Z_DNA(i,:) .* ((0.5 * kbT .* Ct) .* (2 .* pi .* dLk_DNA(i,:) ./ Z_DNA(i,:)).^2);
                                          %G_bareDNA = - L0 .* F .* (1-sqrt(kbT./(F.*At))+F./(2.*S)) +     L0     .* ((0.5 * kbT .* Ct) .* (2 .* pi .* dLk ./ L0).^2);      
-                                    
+                              
         % fiber dimension
         dZ_fiber(i,:) = (F - (k12N(i)) .* 2 .* pi .* dLk_f(i)) ./ k11N(i);
         Z_fiber(i,:) = N(i) .* z0_f + dZ_fiber(i,:);                  
         
         % free energy of the fiber with different number of nucleosomes
         G_fiber(i,:) = ((F .^2 ./ (2 .* k11N(i))) + 0.5 .* k22N(i) .* (2 .* pi .* dLk_f(i,:)).^2);  
-
+   
         % total tether length
         Z_total(i,:) = Z_DNA(i,:) + Z_fiber(i);
         
@@ -362,5 +364,3 @@ else
         hold on;
         
 end
-
-
