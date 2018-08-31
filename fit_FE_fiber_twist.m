@@ -1,21 +1,19 @@
 function [z_final, f] = fit_FE_fiber_twist(f,dLk,CL,Nnuc,Ntet,NRL,kf,k22,degeneracy,dG1,dG2)  
 
 
-%   simulating torsionally constrained chromatin force-extension curves
+%   PLOTTING CHROMATIN FORCE - EXTENSION (torsionally constrained)
 
 %   based on: Meng, Andresen, van Noort - NAR, 2015
 %   modification with respect to the paper: 
-%   - transition from unwrapped to extended state is described only with WLC function
-%   - added twist dependence dependence
-%   (torsional energy factor and change in linking number upon unwrapping)
+%   - transition from singly wrapped to extended state is described only with WLC function
+%   - added twist dependence (torsional energy factor and change in linking number induced by fiber unfolding)
 
 %   input parameters: 
 %   force ramp (pN), number of applied turns, contour length (nm), number of
 %   nucleosomes, number of tetrasomes, Nucleosome Repeat Length (bp), fiber stiffness (pN/nm), 
-%   twist modulus (pN * nm^2), degeneracy, 
-%   free energy of unstacking (dG1), free energy of the intermediate transition (dG2)
+%   twist modulus (pN * nm^2), degeneracy, free energy of unstacking (dG1), free energy of the intermediate transition (dG2)
 
-%   Artur Kaczmarczyk, July 2018
+%   Artur Kaczmarczyk, akaczmarczyk88@gmail.com, July 2018
 
 %% TO DO: FIX THE LEVEL OF PLATEAU AFTER APPLYING TWIST
 
@@ -34,7 +32,7 @@ Lwrap = 89;                                      % length of DNA unwrapped from 
 
 %dG1 = 22;                                       % free energy of unstacking (dG1)
 %dG2 = 11;                                       % free energy of the intermediate transition (dG2)
-dG3 = 80;                                        % high force transition (not in equlibrium, value just for plotting purposes)
+dG3 = 100;                                       % high force transition (not in equlibrium, value just for plotting purposes)
 
 
 L_tether = CL - Nnuc * NRL;                      % length of bare DNA handles (bp)
@@ -49,12 +47,12 @@ Ct = C * (1 - C ./ (4 .* P) .* sqrt(kbT ./ (P .* ftwisted)));                % f
 
 z0_f = 1.7;                                                                  % length of the fiber in the absence of force (nm/nuc)
 %k11 = 1.2;                                                                  % stretch spring constant per nucleosome (pN/nm);
-k11N = kf ./ (Nnuc.*z0_f);                                                   % 
+k11N = kf ./ ((Nnuc-Ntet).*z0_f);                                            % 
 %k22 = 10;                                                                   % twist modulus per nucleosome(pN*nm);
-k22N = k22 ./ (Nnuc.*z0_f);                                                  % 
+k22N = k22 ./ ((Nnuc-Ntet).*z0_f);                                           % 
 k12 = 0.02;                                                                  % twist-stretch coupling factor (pN/rad);
-k12N = k12 ./ (Nnuc.*z0_f);                                                  % 
-Lkf0 = 0.15;
+k12N = k12 ./ ((Nnuc-Ntet).*z0_f);                                           % 
+Lkf0 = -0.15;
 
 
 
@@ -77,16 +75,20 @@ Lk_DNA_fake = -((a1+a2-a3)./a4)
 %% to get DNA slope (offseted to zero)
 
 %dLk_DNA = Lk_DNA_fake - Lk_DNA_zero
-dLk_DNA = (dLk) ./ ((Ct .* kbT)./(k22N.*L_tether)+1)
-dLkf = dLk - dLk_DNA
+
+
+Lk_DNA = ((dLk)) ./ ((Ct .* kbT)./(k22N .* L_tether.*0.34)+1)
+dLk_DNA = dLk./ ((Ct .* kbT)./(k22N .* L_tether.*0.34)+1)
+dLkf = (Nnuc - Ntet).* Lkf0 + (dLk - Lk_DNA)
+
 %dLk_fiber_fake = dLk - dLk_DNA;
 %dLk_DNA = 0.15 .* dLk
 %dLk_f = 0.85 .* dLk
 
 %dLk_f = dLk - Lk_DNA_fake
-Lkf  = dLkf ./ Nnuc;
+Lkf  = dLkf ./ (Nnuc-Ntet);
 
-gain = 0.4;
+gain = 0.3;
 
 %% help plots with transition borders
 
@@ -95,10 +97,11 @@ gain = 0.4;
 [zet_unwrapped] = WLC_z_G(f,CL .* 0.34);
 
 
-plot(zet_singlywrapped./1000,f,':');
+%plot(f,zet_singlywrapped./1000,'--','linewidth',2,'color',[0.8 0.8 1]);
+
+plot(f,zet_extended./1000,'--','linewidth',2,'color',[0.8 0.8 1]);
 hold on;
-plot(zet_extended./1000,f,':');
-plot(zet_unwrapped./1000,f,':');
+plot(f,zet_unwrapped./1000,'--','linewidth',2,'color',[0.8 0.8 1]);
 
 %% tether length at different states (per nucleosome)
 
@@ -131,7 +134,7 @@ for i = 1:(Nnuc - Ntet +1)
             
                state(s,:) = [i-1,j-1,k-1,Nnuc - (i-1) - (j-1) - (k-1)];
           
-               D(s) = factorial(Nnuc)./(factorial(i-1).*factorial(Nnuc-(i-1))) .* (factorial(Nnuc-(i-1))./(factorial(j-1).*factorial(Nnuc-(i-1)-(j-1)))) .* (factorial(Nnuc-(i-1)-(j-1))./(factorial(k-1) .*factorial(Nnuc-(i-1)-(j-1)-(k-1)))); % this particular state exists in D combinations
+               D(s) = factorial(Nnuc)./(factorial(i-1) .* factorial(Nnuc-(i-1))) .* (factorial(Nnuc-(i-1))./(factorial(j-1).*factorial(Nnuc-(i-1)-(j-1)))) .* (factorial(Nnuc-(i-1)-(j-1))./(factorial(k-1) .*factorial(Nnuc-(i-1)-(j-1)-(k-1)))); % this particular state exists in D combinations
                
                D(s) = 1+(D(s)-1) .* degeneracy;                             % a trick to switch off the degeneracy if not needed                      
             
@@ -139,13 +142,13 @@ for i = 1:(Nnuc - Ntet +1)
                
                z_tot(s,:) = z_wrapped + state(s,1) .* z_fiber + state(s,2) .* z_singlewrap + state(s,3) .* z_extended + state(s,4) .* z_unwrapped;          % extension of the states  multiplied by the amount of elements in this particular state
 
-               dLk_DNA_cor = (state(s,2)+state(s,3)+state(s,4)).* gain;
+               dLk_DNA_cor = (state(s,2)+state(s,3)).* gain;
                
                L_unwrapped(s) = L_tether .* 0.34  + state(s,2) .* ((NRL - Lwrap - Lextended./0.34) .* 0.34) + state(s,3) .* Lextended;
              
                [z_unwrapped_cor, g_unwrapped_cor] = WLC_z_G_twist(f,L_unwrapped(s),dLk_DNA + dLk_DNA_cor);
                %z_tot(s,:) = z_unwrapped_cor + state(s,1) .* z_fiber + state(s,4) .* z_unwrapped; 
-               G_unwrapped_2(s,:) = g_unwrapped_cor + state(s,2) .* dG1 + state(s,3) .* (dG1 + dG2);
+               G_unwrapped_2(s,:) = g_unwrapped_cor + state(s,2) .* dG1 + state(s,3) .* (dG1 + dG2); % combined 3 states in one equations as it all goes to WLC function (with corrected dLk upon unwrapping)
                
                G_tot(s,:) = ((G_unwrapped_2(s,:) + state(s,1) .* G_fiber + state(s,4) .* G_unwrapped)) - f.*z_tot(s,:)./kbT;     % internal energy + energy barriers + work done by the tether (-z * F)
                %G_tot(s,:) = ((G_wrapped + state(s,1) .* G_fiber + state(s,2) .* G_singlewrap + state(s,3) .* G_extended + state(s,4) .* G_unwrapped)) - f.*z_tot(s,:)./kbT;     % internal energy + energy barriers + work done by the tether (-z * F)
@@ -177,7 +180,8 @@ for i = 1:col
    
 end
 
-plot(z_final,f,'linewidth',2)
+%plot(f,z_final,'linewidth',3,'color','k')
+%plot(f,z_final,'linewidth',3)
 %plot(G_tot(s,:),f)
 %xlim([0,1.5])
 hold on;
