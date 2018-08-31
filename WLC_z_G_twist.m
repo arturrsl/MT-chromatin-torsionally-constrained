@@ -1,9 +1,9 @@
-function [z_WLC, g_WLC_kbT] = WLC_z_G_twist(f,L,dLk_DNA)                                   
+unction [z_WLC, g_WLC_kbT] = WLC_z_G_twist(f,L,dLk_DNA)                                   
 
 % OUTCOME: extension and internal free energy for stretching and twisting the WLC by
 % magnetic tweezers
 
-% INPUT PARAMETERS: f - force ramp (pN), L - contour length (nm), dLk_DNA -number of applied
+% INPUT PARAMETERS: f - force ramp (pN), L - contour length (nm), dLk_DNA - number of applied
 % turns by the magnet
 
 % Artur Kaczmarczyk, akaczmarczyk88@gmail.com
@@ -16,7 +16,7 @@ P = 50;                                                                      % p
 S = 1000;                                                                    % stretch modulus (pN)
 C = 100;                                                                     % torsional stiffness (nm)
 Ct = C * (1 - C ./ (4 .* P) .* sqrt(kbT ./ (P .* f)));                       % force-dependent effective torsional stiffness (nm)
-Cp = 24;                                                                     % torsional stiffness of plectonemic DNA (nm)
+Cp = 24;                                                                     % torsional stiffness of plectonemic DNA in the presence of nucleosomes (nm)
 
 tau = Ct .* (2 .* pi .* dLk_DNA ./ L) .* kbT;                                % DNA restoring torque (pN*nm)
 tau_melt = -11;                                                              % melting torque (pN*nm)
@@ -66,7 +66,7 @@ for i = 1:length(f)
             
             z_WLC(i) = z_WLC(i);
            
-            g_WLC(i) =   z_WLC(i).*f(i) - L.*f(i).* (1-sqrt(kbT./(f(i).*P))+f(i)./(2.*S)) + L .*( (0.5 * kbT .* Ct(i)) .* (2 .* pi .* dLk_DNA ./ L).^2); % energy of twisted DNA
+            g_WLC(i) =   z_WLC(i).*f(i) - L.*f(i).* (1-sqrt(kbT./(f(i).*P))+f(i)./(2.*S)) + L .* ( (0.5 * kbT .* Ct(i)) .* (2 .* pi .* dLk_DNA ./ L).^2); % energy of twisted DNA
             
             
     end
@@ -133,7 +133,7 @@ g_WLC_kbT = g_WLC./kbT;                                                     % in
 
 %% plotting for checking purposes; switch off for regular use    
 
-                                                      
+%{                                                      
 figure (1)
 plot(z_WLC,f);
 hold on;
@@ -151,3 +151,4 @@ hold on;
 %plot(tau_buck,f);
 
 end
+%}
