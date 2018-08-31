@@ -8,6 +8,7 @@ function [z_final] = DNA_fiber_twisted(F,L0,dLk,length_correction,k11,k22,k12,Lk
         % twist ramp (for example from -50:0.1:50) (dLk), 
         % length correction (due to off-center bead attachment),
         % stretch stiffness (k11), twist modulus (k22) (pN *nm^2), twist-stretch coupling (k12)
+        % linking number change per nucleosone due to unstacking (Lkf0)
         % number of nucleosomes (Nnuc) and tetrasomes in the assembled fiber
 
 % Artur Kaczmarczyk, akaczmarczyk88@gmail.com, August 2018
