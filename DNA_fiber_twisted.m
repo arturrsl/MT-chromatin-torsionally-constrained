@@ -152,13 +152,13 @@ Lk_f = dLk - Lk_DNA;
 
 
          %%z_t =  (1 - 0.5 .* sqrt(kbT/(At .* F))) - (C.^2 ./ 16) .* (2 .* pi .* dLk ./ L0).^2 .* ( kbT ./ (At*F)) .^ (3/2);      % if the total twist would go to DNA (in the absence of chromatin fiber)  
-z_handle =  L0 .* (1 - 0.5 .* sqrt(kbT/(At .* F))) - (C.^2 ./ 16) .* (2 .* pi .* Lk_DNA ./ L0).^2 .* ( kbT ./ (At*F)) .^ (3/2);   % extension of twisted DNA (size of the fiber is neglected here)
+z_handle =  (L0) .* (1 - 0.5 .* sqrt(kbT/(At .* F))) - (C.^2 ./ 16) .* (2 .* pi .* Lk_DNA ./ L0).^2 .* ( kbT ./ (At*F)) .^ (3/2);   % extension of twisted DNA (size of the fiber is neglected here), small offset to plot the fit in the middle of the data
 
 % change in extension of a fiber  due to twist-stretch coupling (includes all nucleosomes)
 dZ_f = (F - k12N .* 2 .* pi .* Lk_f) ./ k11N;                          
 
 % fiber dimension
-Z_f = Nnuc .* z0_f + dZ_f;                                                 
+Z_f = (Nnuc - Ntet)  .* z0_f + dZ_f;                                                 
 
 % torque in a fiber
 tau_f = k12N .* dZ_f  + k22N .* 2 .* pi .* Lk_f;                            
@@ -249,8 +249,8 @@ end
 
 for i = 1:length(dLk)  
     
-    if z_FIB(i) < (length_correction .* 1000) + 150;
-        z_FIB(i) = (length_correction .* 1000) + 150;                       % manually corrected offset due to the off-center attachment (trace does not goes to 0)
+    if z_FIB(i) < (length_correction .* 1000) + 100;
+        z_FIB(i) = (length_correction .* 1000) + 100;                       % manually corrected offset due to the off-center attachment (trace does not goes to 0)
     else
         z_FIB(i) = z_FIB(i);
     end
@@ -262,21 +262,18 @@ end
 
 if F > 3;                                                                   % apply Boltzman only when unwrapping occurs (above 3 pN at positive twist)
     
-    % additional twist that arises from one unfolded nucleosome
-    gain = 0.5;
-    
     % unstacking energy per nucleosome
-    Gu = 4.1 .* 17;                                                         
+    Gu = 4.1 .* 18;                                                         
    
     % varying the number of folded nucleosomes
+    %Nnuc = Nnuc -2 % manual offset because the twisting at 4.5 pN is done already at the level when some nucs might have unwrapped
     for i = 1 : (Nnuc - Ntet +1)   
     
         N(i) = Nnuc - Ntet - (i-1);                                             % number of folded nucleosomes 
     
         z_unfolded(i) = (i-1) .* (((NRL - 147) + 58) .* 0.34);                  % gain in extension upon when one nucleosome unfolds
     
-        Z_DNA(i,:) = z_handle + z_unfolded(i);                                  % tether length increases when fiber unfolds
-    
+        Z_DNA(i,:) = z_handle + z_unfolded(i);                                  % tether length increases when fiber unfolds 
         % stretch spring constant (pN/nm) (k11 is per nucleosome)
         k11N(i) = k11 ./ N(i) .* z0_f;                                          % per fiber
         % twist modulus (pN*nm) (k22 is per nucleosome);
@@ -286,9 +283,9 @@ if F > 3;                                                                   % ap
       
         % DISTRIBUTION OF TWIST BETWEEN DNA AND FIBER
         
-        dLk_DNA(i,:) = ((i-1).* gain + dLk) ./ ((Ct .* kbT)./(k22N(1) .* Z_DNA(i))+1); 
+        dLk_DNA(i,:) =  (dLk) ./ ((Ct .* kbT)./(k22N(1) .* Z_DNA(i))+1); 
        
-        dLk_f(i,:) = (Nnuc-Ntet).* Lkf0  + (dLk - dLk_DNA(i,:));                % HERE IT IS IMPORTANT TO OFFSET LK_F DUE TO FIBER'S CHIRALITY 
+        dLk_f(i,:) = (Nnuc-Ntet).* Lkf0  +  dLk - dLk_DNA(i,:);                 % HERE IT IS IMPORTANT TO OFFSET LK_F DUE TO FIBER'S CHIRALITY 
    
         
         % free energy DNA with added F*z_DNA (because work will be substracted at the end in the Boltzmann formula)
@@ -364,3 +361,5 @@ else
         hold on;
         
 end
+
+
